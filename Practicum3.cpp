@@ -14,6 +14,7 @@ struct {
 
 HBITMAP hBack = NULL; // создадим переменную для нашей картинки 
 
+
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 int WINAPI wWinMain(HINSTANCE hI, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow) {

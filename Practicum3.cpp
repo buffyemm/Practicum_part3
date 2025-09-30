@@ -82,26 +82,30 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		hBack = (HBITMAP)LoadImageW(NULL, L"les.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE); // загружаем картинку в переменную HBITMAP 
 
 
-		if (!hBack) MessageBoxW(hwnd, L"Не удалось!", L"ОШИБКА", MB_ICONERROR);
+		if (!hBack) MessageBoxW(hwnd, L"Не удалось!", L"ОШИБКА", MB_ICONERROR);  // если картинка не была загруженна в переменную, то выдает ошибку 
 		break;
 	}
 
 	case WM_PAINT: { // вывод на экран картинки 
 
-		PAINTSTRUCT ps;
-		HDC hdc = BeginPaint(hwnd, &ps);
+		PAINTSTRUCT ps; // создаем структуру ps, по сути это некий набор кистей 
+		HDC hdc = BeginPaint(hwnd, &ps); //  начинаем рисовать
 
-		HDC hMemDC = CreateCompatibleDC(hdc);
-		HBITMAP hOldBitmap = (HBITMAP)SelectObject(hMemDC, hBack);
-		BITMAP bmp;
-		GetObject(hBack, sizeof(BITMAP), &bmp);
-		BitBlt(hdc, 0, 0, 400, 400, hMemDC, 0, 0, SRCCOPY);
-		
-		SelectObject(hMemDC, hOldBitmap);
-		DeleteDC(hMemDC);
-		DeleteObject(hBack);
+		HDC hMemDC = CreateCompatibleDC(hdc); // созаем контекст памяти чтобы в него передать изображение и потом обратно закинуть его на экран. По сути это второй холст в памяти
+		HBITMAP hOldBitmap = (HBITMAP)SelectObject(hMemDC, hBack); //сохраняем старый битмап, который был в контексте памяти, чтобы потом восстановить
+		BITMAP bmp; // создаем переменную и в нее загоняем размеры картинки нижней строчкой, но это если нам нужен натуральный размер
+		GetObject(hBack, sizeof(BITMAP), &bmp); // узнаем размер картинки
+		BitBlt(hdc, 0, 0, 400, 400, hMemDC, 0, 0, SRCCOPY);// перекидываем из нашего контекста памяти, там уже находитьсяя картинка, и мы выплевываем ее на основоной холст, обратите внимание на размер
 
-		EndPaint(hwnd, &ps);
+		// Используем реальные размеры вместо 400x400
+		//BitBlt(hdc, 0, 0, bmp.bmWidth, bmp.bmHeight, hMemDC, 0, 0, SRCCOPY); можно сделать так, используя реальные размеры картинки
+
+
+		SelectObject(hMemDC, hOldBitmap); // восстанавливаем старый битмап обратно в контекст памяти
+		DeleteDC(hMemDC); // удаляем контекст в памяти
+		DeleteObject(hBack); // очищаем картинку
+
+		EndPaint(hwnd, &ps); // заканчиваю рисовать
 		break;
 	}
 

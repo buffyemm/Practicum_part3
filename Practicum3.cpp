@@ -6,6 +6,8 @@
 #include "Practicum3.h"
 #include "vector"
 
+
+
 // создадим для удобства структуру window чтобы не носиться со всеми переменными
 struct {
 
@@ -57,17 +59,22 @@ void InitWindow() {
 }
 
 void InitGame() {
-	float scale = 0.07;
+	static float scale = 0.07;
 	hero.model.speed = 20;
 	hero.model.x = window.width / 2;
 	hero.model.width = window.width * scale*(0.56);
 	hero.model.height = window.height * scale;
 	hero.model.y = window.height - hero.model.height;
 	hero.picture = (HBITMAP)LoadImageW(NULL, L"A0.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+
+	//item.push_back({window.width * scale, window.height - hero.model.height, window.width * })
+
+
+
 }
 
 
-void DrawBitmap(HDC hdcDest, int x, int y, int w, int h, HBITMAP hBmp, bool transparent) {
+auto DrawBitmap = [](HDC hdcDest, int x, int y, int w, int h, HBITMAP hBmp, bool transparent) {
 	if (!hBmp) return;
 	HDC hMemDC = CreateCompatibleDC(hdcDest);
 	HBITMAP hOldBmp = (HBITMAP)SelectObject(hMemDC, hBmp);
@@ -102,7 +109,9 @@ void ProcesImput() {
 
 	float gravity = 30;
 	if (GetAsyncKeyState('A')) hero.model.x -= hero.model.speed;
-	if (GetAsyncKeyState('D')) hero.model.x += hero.model.speed;
+	if (GetAsyncKeyState('D')) {
+		hero.model.x += hero.model.speed;
+	}
 	if (GetAsyncKeyState(VK_SPACE) && !hero.model.inJump) {
 
 		drop = true;
@@ -154,9 +163,11 @@ int WINAPI wWinMain(HINSTANCE hI, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 
 	InitWindow();
 	InitGame();
+
 	ShowWindow(window.hWnd, nCmdShow);
 
 	SetTimer(window.hWnd, 1, 16, NULL);
+
 
 
 	MSG msg = { };
@@ -196,14 +207,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
 		if (!hBack) MessageBoxW(hwnd, L"Не удалось!", L"ОШИБКА", MB_ICONERROR);
 
-
-
 		break;
 	}
 
 	case WM_TIMER:
 		if (wParam == 1) {
 
+			InvalidateRect(hwnd, NULL, FALSE);
 			ProcesImput();
 
 		}

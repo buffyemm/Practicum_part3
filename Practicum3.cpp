@@ -100,7 +100,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		// Используем реальные размеры вместо 400x400
 		//BitBlt(hdc, 0, 0, bmp.bmWidth, bmp.bmHeight, hMemDC, 0, 0, SRCCOPY); можно сделать так, используя реальные размеры картинки
 
-
 		SelectObject(hMemDC, hOldBitmap); // восстанавливаем старый битмап обратно в контекст памяти
 		DeleteDC(hMemDC); // удаляем контекст в памяти
 		DeleteObject(hBack); // очищаем картинку

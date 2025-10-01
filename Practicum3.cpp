@@ -5,7 +5,9 @@
 #include "framework.h"
 #include "Practicum3.h"
 #include "vector"
+#include <string>
 
+using namespace std;
 
 
 // создадим для удобства структуру window чтобы не носиться со всеми переменными
@@ -30,22 +32,56 @@ public:
 
 };
 
+class portal_ : public object_ {
+public:
+	int target;
+
+	portal_(float x, float y, float width, float height, LPCWSTR name, int temp) {
+
+		model.x = x;
+		model.y = y;
+		model.width = width;
+		model.height = height;
+		picture = (HBITMAP)LoadImageW(NULL, name, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		target = temp;
+	}
+
+};
+
 // создаем структуру 
 struct Character {
 
 	sprite model;
 	HBITMAP picture;
+	int current_loc = 0;
 };
 
+struct location_ {
 
+	vector<object_> item;
+	HBITMAP hBack; // создадим переменную для нашей картинки 
+	vector<portal_> portal;
 
-
-
-std::vector<object_> item;
+};
 
 Character hero;
 
-HBITMAP hBack = NULL; // создадим переменную для нашей картинки 
+location_ room[2];
+
+bool Check_collise(sprite first, sprite second) {
+
+	if (first.x <= second.x + second.width && +
+		first.x + first.width >= second.x &&
+		first.y <= second.y + second.height &&
+		first.y + first.height >= second.y) {
+
+		return true;
+	}
+
+	return false;
+
+
+}
 
 
 void InitWindow() {
@@ -59,17 +95,26 @@ void InitWindow() {
 }
 
 void InitGame() {
-	static float scale = 0.07;
+
+	static float scale = 0.104;
 	hero.model.speed = 20;
 	hero.model.x = window.width / 2;
-	hero.model.width = window.width * scale*(0.56);
+	hero.model.width = window.width * scale*(0.377);
 	hero.model.height = window.height * scale;
 	hero.model.y = window.height - hero.model.height;
 	hero.picture = (HBITMAP)LoadImageW(NULL, L"A0.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
-	//item.push_back({window.width * scale, window.height - hero.model.height, window.width * })
+	room[0].item.push_back({{window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
+	(HBITMAP)LoadImageW(NULL, L"sword.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE)});
 
+	room[1].item.push_back({ {window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
+	(HBITMAP)LoadImageW(NULL, L"axe.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE) });
 
+	room[1].item.push_back({ {window.width * (0.5f), window.height - hero.model.height, window.width * scale, window.height * scale, 0},
+	(HBITMAP)LoadImageW(NULL, L"bow.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE) });
+
+	room[0].portal.emplace_back(window.width - hero.model.width, window.height - hero.model.height * 2, hero.model.width, hero.model.height, L"portal.bmp", 1);
+	
 
 }
 
@@ -97,10 +142,36 @@ auto DrawBitmap = [](HDC hdcDest, int x, int y, int w, int h, HBITMAP hBmp, bool
 
 void ShowObject(HDC hMemDC) {
 
-	DrawBitmap(hMemDC, hero.model.x, hero.model.y, hero.model.width, hero.model.height, hero.picture, false);
+	DrawBitmap(hMemDC, hero.model.x, hero.model.y, hero.model.width, hero.model.height, hero.picture, true);
 
+	for (auto i : room[hero.current_loc].item) {
+
+		DrawBitmap(hMemDC, i.model.x, i.model.y, i.model.width, i.model.height, i.picture, false);
+
+	}
+
+	for (auto p : room[hero.current_loc].portal) {
+
+		DrawBitmap(hMemDC, p.model.x, p.model.y, p.model.width, p.model.height, p.picture, true);
+
+	}
 
 }
+
+void Portal_Logic() {
+
+	for (auto p : room[hero.current_loc].portal) {
+
+		if (Check_collise(hero.model, p.model)) {
+
+			hero.current_loc = p.target;
+			hero.model.x = hero.model.width;
+		}
+	}
+
+}
+
+
 
 void ProcesImput() {
 
@@ -128,6 +199,12 @@ void ProcesImput() {
 		hero.model.inJump = false;
 }
 
+void Process_game() {
+
+	ProcesImput();
+	Portal_Logic();
+	
+}
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -202,10 +279,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 	case WM_CREATE: { // кейс когда создается окно 
 
 
-		hBack = (HBITMAP)LoadImageW(NULL, L"les.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE); // загружаем картинку в переменную HBITMAP 
+		room[0].hBack = (HBITMAP)LoadImageW(NULL, L"les.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE); // загружаем картинку в переменную HBITMAP 
+		room[1].hBack = (HBITMAP)LoadImageW(NULL, L"test.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE); // загружаем картинку в переменную HBITMAP 
 
 
-		if (!hBack) MessageBoxW(hwnd, L"Не удалось!", L"ОШИБКА", MB_ICONERROR);
+		if (!room[0].hBack || !room[0].hBack) MessageBoxW(hwnd, L"Не удалось!", L"ОШИБКА", MB_ICONERROR);
 
 		break;
 	}
@@ -214,7 +292,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		if (wParam == 1) {
 
 			InvalidateRect(hwnd, NULL, FALSE);
-			ProcesImput();
+			//ProcesImput();
+			Process_game();
 
 		}
 		break;
@@ -231,11 +310,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
 		// 2. Рисуем ВСЁ в буфер
 		// --- Фон ---
-		if (hBack) {
+		if (room[hero.current_loc].hBack) {
 			HDC hBackDC = CreateCompatibleDC(hMemDC);
-			HBITMAP hOldBackBmp = (HBITMAP)SelectObject(hBackDC, hBack);
+			HBITMAP hOldBackBmp = (HBITMAP)SelectObject(hBackDC, room[hero.current_loc].hBack);
 			BITMAP bmp;
-			GetObject(hBack, sizeof(BITMAP), &bmp);
+			GetObject(room[0].hBack, sizeof(BITMAP), &bmp);
 			StretchBlt(hMemDC, 0, 0, window.width, window.height, hBackDC, 0, 0, bmp.bmWidth, bmp.bmHeight, SRCCOPY);
 			SelectObject(hBackDC, hOldBackBmp);
 			DeleteDC(hBackDC);

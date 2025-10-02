@@ -32,11 +32,12 @@ public:
 
 };
 
+// сделал класс производный клас, который наследует object_
 class portal_ : public object_ {
 public:
 	int target;
 
-	portal_(float x, float y, float width, float height, LPCWSTR name, int temp) {
+	portal_(float x, float y, float width, float height, LPCWSTR name, int temp) { //конструктор класса
 
 		model.x = x;
 		model.y = y;
@@ -56,6 +57,7 @@ struct Character {
 	int current_loc = 0;
 };
 
+
 struct location_ {
 
 	vector<object_> item;
@@ -68,7 +70,7 @@ Character hero;
 
 location_ room[2];
 
-bool Check_collise(sprite first, sprite second) {
+bool Check_collise(sprite first, sprite second) {  // проверка коллизии 
 
 	if (first.x <= second.x + second.width && +
 		first.x + first.width >= second.x &&
@@ -84,7 +86,7 @@ bool Check_collise(sprite first, sprite second) {
 }
 
 
-void InitWindow() {
+void InitWindow() { // инициализация структуры window
 
 	RECT r;
 	GetClientRect(window.hWnd, &r);
@@ -96,7 +98,8 @@ void InitWindow() {
 
 void InitGame() {
 
-	static float scale = 0.104;
+	static float scale = 0.104; // для экрана 
+	// инициализирую переменные в hero, дальше будем делать конструктор.
 	hero.model.speed = 20;
 	hero.model.x = window.width / 2;
 	hero.model.width = window.width * scale*(0.377);
@@ -104,21 +107,25 @@ void InitGame() {
 	hero.model.y = window.height - hero.model.height;
 	hero.picture = (HBITMAP)LoadImageW(NULL, L"A0.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
+	// закидывамем предметы в локациию, логика такая же, как в текстовой адвенчуре
 	room[0].item.push_back({{window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
 	(HBITMAP)LoadImageW(NULL, L"sword.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE)});
 
 	room[1].item.push_back({ {window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
 	(HBITMAP)LoadImageW(NULL, L"axe.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE) });
 
-	room[1].item.push_back({ {window.width * (0.5f), window.height - hero.model.height, window.width * scale, window.height * scale, 0},
+	room[1].item.push_back({ {window.width - (window.width * scale), window.height - hero.model.height, window.width * scale * (0.5f), window.height * scale * (0.5f), 0},
 	(HBITMAP)LoadImageW(NULL, L"bow.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE) });
 
+	// закидываем порталы
 	room[0].portal.emplace_back(window.width - hero.model.width, window.height - hero.model.height * 2, hero.model.width, hero.model.height, L"portal.bmp", 1);
 	
+	room[1].portal.emplace_back(window.width * (0.5f), window.height - hero.model.height * 3, hero.model.width, hero.model.height, L"portal.bmp", 0);
+
 
 }
 
-
+// отрисовка
 auto DrawBitmap = [](HDC hdcDest, int x, int y, int w, int h, HBITMAP hBmp, bool transparent) {
 	if (!hBmp) return;
 	HDC hMemDC = CreateCompatibleDC(hdcDest);
@@ -128,36 +135,42 @@ auto DrawBitmap = [](HDC hdcDest, int x, int y, int w, int h, HBITMAP hBmp, bool
 
 	if (transparent) {
 
-		TransparentBlt(hdcDest, x, y, w, h, hMemDC, 0, 0, w, h, RGB(0, 0, 0));
+		TransparentBlt(hdcDest, x, y, w, h, hMemDC, 0, 0, w, h, RGB(0, 0, 0));// прозрачность
 
 	}
 	else {
 
-		StretchBlt(hdcDest, x, y, w, h, hMemDC, 0, 0, bmp.bmWidth, bmp.bmHeight, SRCCOPY);
+		StretchBlt(hdcDest, x, y, w, h, hMemDC, 0, 0, bmp.bmWidth, bmp.bmHeight, SRCCOPY); // растягивание на фул экран
 	}
 	SelectObject(hMemDC, hOldBmp);
 	DeleteDC(hMemDC);
 };
 
-
+// отрисовка всех объектов
 void ShowObject(HDC hMemDC) {
 
-	DrawBitmap(hMemDC, hero.model.x, hero.model.y, hero.model.width, hero.model.height, hero.picture, true);
+	// задник
+	DrawBitmap(hMemDC, 0, 0, window.width, window.height, room[hero.current_loc].hBack, false);
 
+	// отрисовка предметов
 	for (auto i : room[hero.current_loc].item) {
 
 		DrawBitmap(hMemDC, i.model.x, i.model.y, i.model.width, i.model.height, i.picture, false);
 
 	}
-
+	// порталы
 	for (auto p : room[hero.current_loc].portal) {
 
 		DrawBitmap(hMemDC, p.model.x, p.model.y, p.model.width, p.model.height, p.picture, true);
 
 	}
 
+	// герой
+	DrawBitmap(hMemDC, hero.model.x, hero.model.y, hero.model.width, hero.model.height, hero.picture, true);
+
 }
 
+// логика поралов
 void Portal_Logic() {
 
 	for (auto p : room[hero.current_loc].portal) {
@@ -172,7 +185,7 @@ void Portal_Logic() {
 }
 
 
-
+// опрос клавиатуры
 void ProcesImput() {
 
 	static bool drop = false;
@@ -199,9 +212,24 @@ void ProcesImput() {
 		hero.model.inJump = false;
 }
 
+// границы комнаты, чтобы чел не ушел
+void Proces_room() {
+
+
+	if (hero.model.x <= window.width - window.width)
+		hero.model.x = 0;
+
+	if (hero.model.x >= window.width - hero.model.width)
+
+		hero.model.x = window.width - hero.model.width;
+
+}
+
+
 void Process_game() {
 
 	ProcesImput();
+	Proces_room();
 	Portal_Logic();
 	
 }
@@ -243,7 +271,7 @@ int WINAPI wWinMain(HINSTANCE hI, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 
 	ShowWindow(window.hWnd, nCmdShow);
 
-	SetTimer(window.hWnd, 1, 16, NULL);
+	SetTimer(window.hWnd, 1, 16, NULL);// ставим таймер на 16 милесикунд~60фпс
 
 
 
@@ -289,10 +317,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 	}
 
 	case WM_TIMER:
-		if (wParam == 1) {
+		if (wParam == 1) { // у каждого таймера есть свой айди, и если таймер под айдишником 1 закончился, то мы запускаем то что ниже
 
-			InvalidateRect(hwnd, NULL, FALSE);
-			//ProcesImput();
+			InvalidateRect(hwnd, NULL, FALSE); // перерисовка всего окна
 			Process_game();
 
 		}
@@ -308,17 +335,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		HBITMAP hMemBmp = CreateCompatibleBitmap(hdc, window.width, window.height);
 		HBITMAP hOldBmp = (HBITMAP)SelectObject(hMemDC, hMemBmp);
 
-		// 2. Рисуем ВСЁ в буфер
-		// --- Фон ---
-		if (room[hero.current_loc].hBack) {
-			HDC hBackDC = CreateCompatibleDC(hMemDC);
-			HBITMAP hOldBackBmp = (HBITMAP)SelectObject(hBackDC, room[hero.current_loc].hBack);
-			BITMAP bmp;
-			GetObject(room[0].hBack, sizeof(BITMAP), &bmp);
-			StretchBlt(hMemDC, 0, 0, window.width, window.height, hBackDC, 0, 0, bmp.bmWidth, bmp.bmHeight, SRCCOPY);
-			SelectObject(hBackDC, hOldBackBmp);
-			DeleteDC(hBackDC);
-		}
 
 		// --- Платформа и герой ---
 

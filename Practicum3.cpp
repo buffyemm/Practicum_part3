@@ -9,7 +9,8 @@
 
 using namespace std;
 
-
+bool activ = false;
+HBITMAP menu = (HBITMAP)LoadImageW(NULL, L"menu.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 // создадим для удобства структуру window чтобы не носиться со всеми переменными
 struct {
 
@@ -55,6 +56,8 @@ struct Character {
 	sprite model;
 	HBITMAP picture;
 	int current_loc = 0;
+	vector<object_> item;
+
 };
 
 
@@ -85,6 +88,27 @@ bool Check_collise(sprite first, sprite second) {  // проверка колл�
 
 }
 
+struct {
+
+	POINT p;
+
+	bool collise_mouse(sprite first) {
+
+		if (p.x >= first.x &&
+			p.x <= first.x + first.width &&
+			p.y <= first.y + first.height &&
+			p.y >= first.y)
+
+	return true;
+
+		else
+			return false;
+
+	}
+
+
+}mouse;
+
 
 void InitWindow() { // инициализация структуры window
 
@@ -113,6 +137,9 @@ void InitGame() {
 
 	room[1].item.push_back({ {window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
 	(HBITMAP)LoadImageW(NULL, L"axe.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE) });
+
+	room[0].item.push_back({ {hero.model.width, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
+	(HBITMAP)LoadImageW(NULL, L"key.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE) });
 
 	room[1].item.push_back({ {window.width - (window.width * scale), window.height - hero.model.height, window.width * scale * (0.5f), window.height * scale * (0.5f), 0},
 	(HBITMAP)LoadImageW(NULL, L"bow.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE) });
@@ -168,6 +195,35 @@ void ShowObject(HDC hMemDC) {
 	// герой
 	DrawBitmap(hMemDC, hero.model.x, hero.model.y, hero.model.width, hero.model.height, hero.picture, true);
 
+	// предметы игрока
+	const int ITEM_SPACING = 10;
+	int xPos = 100;
+	if (!hero.item.empty()) {
+
+		for (auto& item : hero.item) {
+			DrawBitmap(hMemDC, xPos, 100,
+				item.model.width, item.model.height, item.picture, false);
+			xPos += item.model.width + ITEM_SPACING;
+		}
+	}
+
+
+	if (activ) {
+
+		float imageWidthPercent = 0.30f;  // 10% ширины экрана
+		float imageHeightPercent = 0.45f; // 15% высоты экрана
+
+		int imageWidth = (int)(window.width * imageWidthPercent);
+		int imageHeight = (int)(window.height * imageHeightPercent);
+
+		// Центрирование
+		int centerX = (window.width - imageWidth) / 2;
+		int centerY = (window.height - imageHeight) / 2;
+
+		DrawBitmap(hMemDC, centerX, centerY, imageWidth, imageHeight, menu, false);
+	}
+
+
 }
 
 // логика поралов
@@ -177,12 +233,16 @@ void Portal_Logic() {
 
 		if (Check_collise(hero.model, p.model)) {
 
-			hero.current_loc = p.target;
-			hero.model.x = hero.model.width;
+			activ = true;
+
+
+			/*hero.current_loc = p.target;
+			hero.model.x = hero.model.width;*/
 		}
 	}
 
 }
+
 
 
 // опрос клавиатуры
@@ -228,10 +288,17 @@ void Proces_room() {
 
 void Process_game() {
 
+	GetCursorPos(&mouse.p);
 	ProcesImput();
 	Proces_room();
 	Portal_Logic();
 	
+}
+
+void Menu() {
+
+
+
 }
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -297,7 +364,22 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 			DestroyWindow(hwnd);
 
 		}
+
 		break;
+
+
+	case WM_LBUTTONDOWN:
+
+		for (int i = 0; i < room[hero.current_loc].item.size(); i++) {
+			if (mouse.collise_mouse(room[hero.current_loc].item[i].model)) {
+
+				hero.item.emplace_back(room[hero.current_loc].item[i]);
+				room[hero.current_loc].item.erase(room[hero.current_loc].item.cbegin() + i);
+
+			}
+
+		}
+			break;
 
 	case WM_DESTROY: // когда уничтожается
 		PostQuitMessage(0);

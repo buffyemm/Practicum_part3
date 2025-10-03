@@ -9,7 +9,8 @@
 
 using namespace std;
 
-bool activ = false;
+bool GameActiv = true;
+
 HBITMAP menu = (HBITMAP)LoadImageW(NULL, L"menu.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 // создадим для удобства структуру window чтобы не носиться со всеми переменными
 struct {
@@ -173,6 +174,45 @@ auto DrawBitmap = [](HDC hdcDest, int x, int y, int w, int h, HBITMAP hBmp, bool
 	DeleteDC(hMemDC);
 };
 
+void Back_menu(HDC hMemDC) {
+
+	float imageWidthPercent = 0.30f;  // 10% ширины экрана
+	float imageHeightPercent = 0.45f; // 15% высоты экрана
+
+	int imageWidth = (int)(window.width * imageWidthPercent);
+	int imageHeight = (int)(window.height * imageHeightPercent);
+
+	// Центрирование
+	int centerX = (window.width - imageWidth) / 2;
+	int centerY = (window.height - imageHeight) / 2;
+
+
+	float iw = 0.20f;
+	float ih = 0.40f;
+
+	int hw = (int)(imageWidth * iw);
+	int hh = (int)(imageHeight * ih);
+
+
+	int cx = (imageWidth - hw) ;
+	int cy = (imageHeight - hh);
+
+	DrawBitmap(hMemDC, cx, cy, hw, hh, hero.picture, false);
+	DrawBitmap(hMemDC, centerX, centerY, imageWidth, imageHeight, menu, false);
+
+}
+
+void Menu(HDC hMemDC) {
+
+	if (!GameActiv) {
+
+		Back_menu(hMemDC);
+
+
+	}
+
+}
+
 // отрисовка всех объектов
 void ShowObject(HDC hMemDC) {
 
@@ -207,21 +247,8 @@ void ShowObject(HDC hMemDC) {
 		}
 	}
 
+	Menu(hMemDC);
 
-	if (activ) {
-
-		float imageWidthPercent = 0.30f;  // 10% ширины экрана
-		float imageHeightPercent = 0.45f; // 15% высоты экрана
-
-		int imageWidth = (int)(window.width * imageWidthPercent);
-		int imageHeight = (int)(window.height * imageHeightPercent);
-
-		// Центрирование
-		int centerX = (window.width - imageWidth) / 2;
-		int centerY = (window.height - imageHeight) / 2;
-
-		DrawBitmap(hMemDC, centerX, centerY, imageWidth, imageHeight, menu, false);
-	}
 
 
 }
@@ -233,11 +260,9 @@ void Portal_Logic() {
 
 		if (Check_collise(hero.model, p.model)) {
 
-			activ = true;
+			hero.current_loc = p.target;
+			hero.model.x = hero.model.width;
 
-
-			/*hero.current_loc = p.target;
-			hero.model.x = hero.model.width;*/
 		}
 	}
 
@@ -272,6 +297,23 @@ void ProcesImput() {
 		hero.model.inJump = false;
 }
 
+
+
+void Lbutton() {
+
+	for (int i = 0; i < room[hero.current_loc].item.size(); i++) {
+		if (mouse.collise_mouse(room[hero.current_loc].item[i].model)) {
+
+			hero.item.emplace_back(room[hero.current_loc].item[i]);
+			room[hero.current_loc].item.erase(room[hero.current_loc].item.cbegin() + i);
+
+		}
+
+	}
+
+
+}
+
 // границы комнаты, чтобы чел не ушел
 void Proces_room() {
 
@@ -286,20 +328,20 @@ void Proces_room() {
 }
 
 
+
+
 void Process_game() {
 
 	GetCursorPos(&mouse.p);
-	ProcesImput();
-	Proces_room();
-	Portal_Logic();
-	
+
+	if (GameActiv) {
+
+		ProcesImput();
+		Proces_room();
+		Portal_Logic();
+	}
 }
 
-void Menu() {
-
-
-
-}
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -365,20 +407,19 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
 		}
 
+		if (wParam == 'I') {
+
+			GameActiv ? GameActiv = false : GameActiv = true;
+
+		}
+
 		break;
 
 
 	case WM_LBUTTONDOWN:
 
-		for (int i = 0; i < room[hero.current_loc].item.size(); i++) {
-			if (mouse.collise_mouse(room[hero.current_loc].item[i].model)) {
+		Lbutton();
 
-				hero.item.emplace_back(room[hero.current_loc].item[i]);
-				room[hero.current_loc].item.erase(room[hero.current_loc].item.cbegin() + i);
-
-			}
-
-		}
 			break;
 
 	case WM_DESTROY: // когда уничтожается

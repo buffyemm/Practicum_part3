@@ -176,29 +176,45 @@ auto DrawBitmap = [](HDC hdcDest, int x, int y, int w, int h, HBITMAP hBmp, bool
 
 void Back_menu(HDC hMemDC) {
 
-	float imageWidthPercent = 0.30f;  // 10% ширины экрана
-	float imageHeightPercent = 0.45f; // 15% высоты экрана
+	float imageWidthPercent = 0.20f;
+	float imageHeightPercent = 0.35f;
 
-	int imageWidth = (int)(window.width * imageWidthPercent);
-	int imageHeight = (int)(window.height * imageHeightPercent);
+	int menuWidth = (int)(window.width * imageWidthPercent);
+	int menuHeight = (int)(window.height * imageHeightPercent);
 
-	// Центрирование
-	int centerX = (window.width - imageWidth) / 2;
-	int centerY = (window.height - imageHeight) / 2;
+	int centerX = (window.width - menuWidth) / 2;
+	int centerY = (window.height - menuHeight) / 2;
 
+	float iw = 0.30f;
+	float ih = 0.45f;
 
-	float iw = 0.20f;
-	float ih = 0.40f;
+	int hw = (int)(menuWidth * iw);
+	int hh = (int)(menuHeight * ih);
 
-	int hw = (int)(imageWidth * iw);
-	int hh = (int)(imageHeight * ih);
+	// Позиция игрока: по центру в верхней части меню
+	int cx = centerX + (menuWidth - hw) / 2;
+	int cy = centerY + 10;  // Небольшой отступ от верха меню
 
-
-	int cx = (imageWidth - hw) ;
-	int cy = (imageHeight - hh);
-
+	DrawBitmap(hMemDC, centerX, centerY, menuWidth, menuHeight, menu, false);
 	DrawBitmap(hMemDC, cx, cy, hw, hh, hero.picture, false);
-	DrawBitmap(hMemDC, centerX, centerY, imageWidth, imageHeight, menu, false);
+
+
+	int squareSize = (int)(menuWidth * 0.1f); // 15% ширины меню
+	int spacing = (int)(menuHeight * 0.02f); // 2% высоты меню
+
+	// Начальная позиция для квадратиков
+	int startY = cy + hh + (int)(menuHeight * 0.05f);
+
+	for (int i = 0; i < hero.item.size(); i++) {
+		if (!hero.item.empty()) {
+			int squareX = centerX + i * (menuWidth - squareSize) / 7;
+			int squareY = startY + (squareSize + spacing);
+
+			DrawBitmap(hMemDC, squareX, squareY, squareSize, squareSize, hero.item[i].picture, false);
+
+		
+		}
+	}
 
 }
 
@@ -238,14 +254,13 @@ void ShowObject(HDC hMemDC) {
 	// предметы игрока
 	const int ITEM_SPACING = 10;
 	int xPos = 100;
-	if (!hero.item.empty()) {
+	//if (!hero.item.empty()) {
 
-		for (auto& item : hero.item) {
-			DrawBitmap(hMemDC, xPos, 100,
-				item.model.width, item.model.height, item.picture, false);
-			xPos += item.model.width + ITEM_SPACING;
-		}
-	}
+	//	for (auto& item : hero.item) {
+	//		DrawBitmap(hMemDC, xPos, 100, item.model.width, item.model.height, item.picture, false);
+	//		xPos += item.model.width + ITEM_SPACING;
+	//	}
+	//}
 
 	Menu(hMemDC);
 

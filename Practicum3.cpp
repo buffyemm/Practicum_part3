@@ -31,7 +31,7 @@ class object_ {
 public:
 	sprite model;
 	HBITMAP picture;
-
+	
 };
 
 // сделал класс производный клас, который наследует object_
@@ -58,6 +58,8 @@ struct Character {
 	HBITMAP picture;
 	int current_loc = 0;
 	vector<object_> item;
+	vector<object_> rig;
+
 
 };
 
@@ -111,6 +113,8 @@ struct {
 }mouse;
 
 
+object_ Hand;
+
 void InitWindow() { // инициализация структуры window
 
 	RECT r;
@@ -131,6 +135,9 @@ void InitGame() {
 	hero.model.height = window.height * scale;
 	hero.model.y = window.height - hero.model.height;
 	hero.picture = (HBITMAP)LoadImageW(NULL, L"A0.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+
+	Hand.picture = (HBITMAP)LoadImageW(NULL, L"hand.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+
 
 	// закидывамем предметы в локациию, логика такая же, как в текстовой адвенчуре
 	room[0].item.push_back({{window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
@@ -195,26 +202,46 @@ void Back_menu(HDC hMemDC) {
 	int cx = centerX + (menuWidth - hw) / 2;
 	int cy = centerY + 10;  // Небольшой отступ от верха меню
 
-	DrawBitmap(hMemDC, centerX, centerY, menuWidth, menuHeight, menu, false);
-	DrawBitmap(hMemDC, cx, cy, hw, hh, hero.picture, false);
+	DrawBitmap(hMemDC, centerX, centerY, menuWidth, menuHeight, menu, false); // задник
+	DrawBitmap(hMemDC, cx, cy, hw, hh, hero.picture, false); // картинка игрока
 
 
 	int squareSize = (int)(menuWidth * 0.1f); // 15% ширины меню
 	int spacing = (int)(menuHeight * 0.02f); // 2% высоты меню
 
+
+
 	// Начальная позиция для квадратиков
 	int startY = cy + hh + (int)(menuHeight * 0.05f);
 
 	for (int i = 0; i < hero.item.size(); i++) {
-		if (!hero.item.empty()) {
-			int squareX = centerX + i * (menuWidth - squareSize) / 7;
-			int squareY = startY + (squareSize + spacing);
 
-			DrawBitmap(hMemDC, squareX, squareY, squareSize, squareSize, hero.item[i].picture, false);
+		if (!hero.item.empty()) {
+
+						
+			/*int squareX = centerX + i * (menuWidth - squareSize) / 7;
+			int squareY = startY + (squareSize + spacing);*/
+
+			hero.item[i].model.x = centerX + i * (menuWidth - squareSize) / 7;
+			hero.item[i].model.y = startY + (squareSize + spacing);
+			hero.item[i].model.width = squareSize;
+			hero.item[i].model.height = squareSize;
+
+
+			DrawBitmap(hMemDC, hero.item[i].model.x, hero.item[i].model.y, hero.item[i].model.width, hero.item[i].model.height, hero.item[i].picture, false); // предметы в слотах
 
 		
 		}
 	}
+
+	Hand.model.x = cx + squareSize * 4;
+	Hand.model.y = centerY + squareSize;
+	Hand.model.width = squareSize;
+	Hand.model.height = squareSize;
+
+
+	DrawBitmap(hMemDC, Hand.model.x, Hand.model.y, Hand.model.width, Hand.model.height, hero.rig.empty() ? Hand.picture : hero.rig[0].picture, false); // слот рук
+
 
 }
 
@@ -296,6 +323,7 @@ void ProcesImput() {
 	if (GetAsyncKeyState('D')) {
 		hero.model.x += hero.model.speed;
 	}
+
 	if (GetAsyncKeyState(VK_SPACE) && !hero.model.inJump) {
 
 		drop = true;
@@ -321,6 +349,40 @@ void Lbutton() {
 
 			hero.item.emplace_back(room[hero.current_loc].item[i]);
 			room[hero.current_loc].item.erase(room[hero.current_loc].item.cbegin() + i);
+
+		}
+
+	}
+
+
+}
+
+void Rbutton() {
+
+
+	for (int i = 0; i < hero.item.size(); i++) {
+
+		if (mouse.collise_mouse(hero.item[i].model)) {
+			
+			if (hero.rig.size() < 1) {
+
+				hero.rig.emplace_back(hero.item[i]);
+				hero.item.erase(hero.item.cbegin() + i);
+
+			}
+
+		}
+	
+
+	}
+
+	for (int i = 0; i < hero.rig.size(); i++) {
+
+		if (mouse.collise_mouse(Hand.model)) {
+
+			hero.item.emplace_back(hero.rig[i]);
+			hero.rig.erase(hero.rig.cbegin() + i);
+
 
 		}
 
@@ -436,6 +498,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		Lbutton();
 
 			break;
+
+	case WM_RBUTTONDOWN:
+
+		Rbutton();
+
+
+
+		break;
 
 	case WM_DESTROY: // когда уничтожается
 		PostQuitMessage(0);

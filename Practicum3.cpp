@@ -10,6 +10,7 @@
 using namespace std;
 
 bool GameActiv = true;
+BOOL time_at = false; // время прошло клика стрелы
 
 HBITMAP menu = (HBITMAP)LoadImageW(NULL, L"menu.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 // создадим для удобства структуру window чтобы не носиться со всеми переменными
@@ -26,13 +27,53 @@ struct sprite {
 	bool inJump = false;
 };
 
+enum class item_ {
+
+	Sword,
+	Bow,
+	Axe,
+	block
+
+};
+
 // класс по стуи тоже самое что и структура но со своими плюшками
 class object_ {
 public:
 	sprite model;
 	HBITMAP picture;
-	
+	item_ ID;
 };
+
+
+class ar : public object_ {
+
+public:
+
+	float directionX, directionY;
+	bool activ;
+
+	ar(float x, float y) {
+
+		model.x = x;
+		model.y = y;
+		model.speed = 10;
+		model.width = 40;
+		model.height = 40;
+		picture = (HBITMAP)LoadImageW(NULL, L"ball.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		activ = false;
+	}
+
+	bool isOutOfScreen() {
+
+		return (model.x + model.width > window.width ||
+			model.x < 0 ||
+			model.y < 0 ||
+			model.y + model.height > window.height);
+	}
+
+
+};
+
 
 // сделал класс производный клас, который наследует object_
 class portal_ : public object_ {
@@ -59,7 +100,27 @@ struct Character {
 	int current_loc = 0;
 	vector<object_> item;
 	vector<object_> rig;
-	vector<HBITMAP> anim;
+	HBITMAP anim[4];
+	int HP;
+
+	void set_parameters(float x, float y, float width, float height, float speed, int hp) {
+
+		model.x = x;
+		model.y = y;
+		model.width = width;
+		model.height = height;
+		model.speed = speed;
+		HP = hp;
+
+	}
+
+	int get_anim_index() {
+
+		if (rig.empty()) return 0;
+
+		else return (int)rig[0].ID + 1;
+
+	}
 
 };
 
@@ -73,6 +134,8 @@ struct location_ {
 };
 
 Character hero;
+Character enemy;
+std::vector<ar>arrow;
 
 location_ room[2];
 
@@ -138,33 +201,37 @@ void InitWindow() { // инициализация структуры window
 void InitGame() {
 
 	static float scale = 0.104; // для экрана 
-	// инициализирую переменные в hero, дальше будем делать конструктор.
-	hero.model.speed = 20;
-	hero.model.x = window.width / 2;
-	hero.model.width = window.width * scale*(0.377);
-	hero.model.height = window.height * scale;
-	hero.model.y = window.height - hero.model.height;
-	hero.picture = (HBITMAP)LoadImageW(NULL, L"A0.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	// инициализирую переменные в hero, дальше будем делать метод.
+
+	hero.set_parameters(window.width * scale, window.height - (window.height * scale), window.width * scale * (0.377), window.height * scale, 20, 100); // метод
+
+	enemy.set_parameters(window.width / 2, hero.model.y, hero.model.width, hero.model.height, 10, 150);
+
+	enemy.picture = (HBITMAP)LoadImageW(NULL, L"E0.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+
+	enemy.item.push_back({{ enemy.model.x, enemy.model.y, window.width * scale * (0.377f), window.width * scale * (0.377f), 0 },
+		(HBITMAP)LoadImageW(NULL, L"key.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::block});
 
 	Hand.picture = (HBITMAP)LoadImageW(NULL, L"hand.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
-	hero.anim.push_back((HBITMAP)LoadImageW(NULL, L"S.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
-	hero.anim.push_back((HBITMAP)LoadImageW(NULL, L"B.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
-	hero.anim.push_back((HBITMAP)LoadImageW(NULL, L"A.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
+	hero.anim[0] = ((HBITMAP)LoadImageW(NULL, L"A0.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
+	hero.anim[1] = ((HBITMAP)LoadImageW(NULL, L"S.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
+	hero.anim[2] = ((HBITMAP)LoadImageW(NULL, L"B.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
+	hero.anim[3] = ((HBITMAP)LoadImageW(NULL, L"A.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
 
 
 	// закидывамем предметы в локациию, логика такая же, как в текстовой адвенчуре
 	room[0].item.push_back({{window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
-	(HBITMAP)LoadImageW(NULL, L"sword.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE)});
+	(HBITMAP)LoadImageW(NULL, L"sword.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::Sword });
 
 	room[1].item.push_back({ {window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
-	(HBITMAP)LoadImageW(NULL, L"axe.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE) });
+	(HBITMAP)LoadImageW(NULL, L"axe.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::Axe });
 
 	room[0].item.push_back({ {hero.model.width, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
-	(HBITMAP)LoadImageW(NULL, L"key.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE) });
+	(HBITMAP)LoadImageW(NULL, L"key.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::block });
 
 	room[1].item.push_back({ {window.width - (window.width * scale), window.height - hero.model.height, window.width * scale * (0.5f), window.height * scale * (0.5f), 0},
-	(HBITMAP)LoadImageW(NULL, L"bow.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE) });
+	(HBITMAP)LoadImageW(NULL, L"bow.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::Bow });
 
 
 
@@ -173,6 +240,77 @@ void InitGame() {
 	
 	room[1].portal.emplace_back(window.width * (0.5f), window.height - hero.model.height * 3, hero.model.width, hero.model.height, L"portal.bmp", 0);
 
+
+}
+
+bool Collise(sprite first, sprite second) {
+
+
+	if (first.x <= second.x + second.width && +
+		first.x + first.width >= second.x &&
+		first.y <= second.y + second.height &&
+		first.y + first.height >= second.y) {
+
+		return true;
+	}
+
+	return false;
+
+}
+
+void Collise_ball() {
+
+
+	if (!hero.rig.empty() && hero.rig[0].ID == item_::Bow) {
+
+		for (auto ball : arrow) {
+
+			if (Collise(enemy.model, ball.model)) {
+
+
+				enemy.model.x += 50;
+
+				for (int i = 0; i < enemy.item.size(); i++) {
+
+					room[hero.current_loc].item.emplace_back(enemy.item[i]);
+					enemy.item.erase(enemy.item.cbegin() + i);
+					enemy.item.clear();
+				}
+
+				enemy.picture = NULL;
+
+
+
+			}
+
+		}
+
+	}
+
+}
+
+void Enemy_Fight() {
+
+	if (Collise(enemy.model, hero.model)) {
+
+
+		if (!hero.rig.empty() && (hero.rig[0].ID == item_::Axe || hero.rig[0].ID == item_::Sword)) {
+
+
+			enemy.model.x += 50;
+	
+			for (int i = 0; i < enemy.item.size(); i++) {
+
+				room[hero.current_loc].item.emplace_back(enemy.item[i]);
+				enemy.item.erase(enemy.item.cbegin() + i);
+				enemy.item.clear();
+			}
+
+			enemy.picture = NULL;
+
+		}
+
+	}
 
 }
 
@@ -237,8 +375,8 @@ void DrawMenuBackground(HDC hMemDC, const menuSettings& layot) {
 
 void DrawAvatarinMenu(HDC hMemDC, const menuSettings& layot) {
 
-	DrawBitmap(hMemDC, layot.avatarX, layot.avatarY, layot.avatarWidth, layot.avatarHeight, hero.picture, false);
 
+	DrawBitmap(hMemDC, layot.avatarX, layot.avatarY, layot.avatarWidth, layot.avatarHeight, hero.anim[hero.get_anim_index()], false);
 
 }
 
@@ -311,18 +449,17 @@ void ShowObject(HDC hMemDC) {
 	}
 
 	// герой
-	DrawBitmap(hMemDC, hero.model.x, hero.model.y, hero.model.width, hero.model.height, hero.picture, true);
+	DrawBitmap(hMemDC, hero.model.x, hero.model.y, hero.model.width, hero.model.height, hero.anim[hero.get_anim_index()], true);
 
-	// предметы игрока
-	const int ITEM_SPACING = 10;
-	int xPos = 100;
-	//if (!hero.item.empty()) {
+	for (auto a : arrow) {
 
-	//	for (auto& item : hero.item) {
-	//		DrawBitmap(hMemDC, xPos, 100, item.model.width, item.model.height, item.picture, false);
-	//		xPos += item.model.width + ITEM_SPACING;
-	//	}
-	//}
+		if (a.activ)
+
+			DrawBitmap(hMemDC, a.model.x, a.model.y, a.model.width, a.model.height, a.picture, true);
+
+	}
+
+	DrawBitmap(hMemDC, enemy.model.x, enemy.model.y, enemy.model.width, enemy.model.height, enemy.picture, true);
 
 	Menu(hMemDC);
 
@@ -373,9 +510,19 @@ void ProcesImput() {
 		hero.model.inJump = false;
 }
 
+void ProcesBall() {
+
+	for (int i = 0; i < arrow.size(); i++) {
+
+		if (arrow[i].activ) {
+			arrow[i].model.x += arrow[i].directionX * arrow[i].model.speed;
+			arrow[i].model.y += arrow[i].directionY * arrow[i].model.speed;
+		}
+	}
+}
 
 
-void Lbutton() {
+void Pick() {
 
 	for (int i = 0; i < room[hero.current_loc].item.size(); i++) {
 		if (mouse.collise_mouse(room[hero.current_loc].item[i].model)) {
@@ -384,6 +531,24 @@ void Lbutton() {
 			room[hero.current_loc].item.erase(room[hero.current_loc].item.cbegin() + i);
 
 		}
+
+	}
+
+	if (!GameActiv) {
+
+		for (int i = 0; i < hero.item.size(); i++) {
+			if (mouse.collise_mouse(hero.item[i].model)) {
+
+				hero.item[i].model.x = hero.model.x + hero.model.width * 2;
+				hero.item[i].model.y = hero.model.y;
+
+				room[hero.current_loc].item.emplace_back(hero.item[i]);
+				hero.item.erase(hero.item.cbegin() + i);
+
+			}
+
+		}
+
 
 	}
 
@@ -436,6 +601,60 @@ void Proces_room() {
 
 }
 
+void Mouse_Action() {
+
+
+	arrow.push_back(ar(hero.model.x + hero.model.width, hero.model.y + hero.model.height / 2));
+
+	// Вычисляем вектор направления
+	int targetX = mouse.p.x;
+	int targetY = mouse.p.y;
+
+	for (int i = 0; i < arrow.size(); i++) {
+
+		if (!arrow[i].activ) {
+
+			// Вычисляем разницы
+			int diffX = targetX - arrow[i].model.x;
+			int diffY = targetY - arrow[i].model.y;
+
+			// Вычисляем длину вектора (расстояние)
+			float distance = sqrt(diffX * diffX + diffY * diffY);
+
+			// Нормализуем вектор (делаем длину = 1)
+			if (distance > 0) {
+				arrow[i].directionX = diffX / distance;
+				arrow[i].directionY = diffY / distance;
+			}
+			else {
+				arrow[i].directionX = 0;
+				arrow[i].directionY = 0;
+			}
+
+			arrow[i].activ = true;
+		}
+	}
+
+
+}
+
+void Clean_arrows() {
+
+	for (int i = arrow.size() - 1; i >= 0; i--) {
+
+		if (arrow[i].isOutOfScreen()) {
+
+			if (arrow[i].picture != NULL) {
+				DeleteObject(arrow[i].picture);
+				arrow[i].picture = NULL;
+			}
+
+			arrow.erase(arrow.begin() + i);
+		}
+
+	}
+
+}
 
 
 
@@ -448,6 +667,10 @@ void Process_game() {
 		ProcesImput();
 		Proces_room();
 		Portal_Logic();
+		ProcesBall();
+		Enemy_Fight();
+		Collise_ball();
+
 	}
 }
 
@@ -522,12 +745,21 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
 		}
 
+		
+			if (wParam == 'E')
+				Pick();
+
+
+		
 		break;
 
 
 	case WM_LBUTTONDOWN:
 
-		Lbutton();
+		if (!time_at && !hero.rig.empty() && hero.rig[0].ID == item_::Bow) {
+			SetTimer(hwnd, 2, 600, NULL);
+			time_at = true;
+		}
 
 			break;
 
@@ -541,6 +773,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
 	case WM_DESTROY: // когда уничтожается
 		PostQuitMessage(0);
+		KillTimer(hwnd, 1);
+		KillTimer(hwnd, 2);
 		return 0;
 
 
@@ -562,6 +796,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 			InvalidateRect(hwnd, NULL, FALSE); // перерисовка всего окна
 			Process_game();
 
+		}
+
+		if (wParam == 2 && time_at) {
+
+			KillTimer(hwnd, 2);
+			Mouse_Action();
+			Clean_arrows();
+			time_at = false;
 		}
 		break;
 

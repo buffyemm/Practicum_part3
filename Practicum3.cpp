@@ -112,6 +112,16 @@ struct {
 
 }mouse;
 
+struct menuSettings {
+
+	int menuWidth, menuHeight;
+	int centerX, centerY;
+	int avatarWidth, avatarHeight;
+	int avatarX, avatarY;
+	int squaereSize, spacing;
+	int itemStartY;
+
+};
 
 object_ Hand;
 
@@ -188,155 +198,93 @@ auto DrawBitmap = [](HDC hdcDest, int x, int y, int w, int h, HBITMAP hBmp, bool
 };
 
 
-//// Структура для размеров меню
-//struct MenuLayout {
-//	int menuWidth, menuHeight;
-//	int centerX, centerY;
-//	int heroWidth, heroHeight;
-//	int heroX, heroY;
-//	int squareSize, spacing;
-//	int itemsStartY;
-//};
-//
-//// 1. Расчет layout меню
-//MenuLayout CalculateMenuLayout() {
-//	MenuLayout layout;
-//
-//	// Размеры меню
-//	layout.menuWidth = (int)(window.width * 0.20f);
-//	layout.menuHeight = (int)(window.height * 0.35f);
-//	layout.centerX = (window.width - layout.menuWidth) / 2;
-//	layout.centerY = (window.height - layout.menuHeight) / 2;
-//
-//	// Размеры и позиция героя
-//	layout.heroWidth = (int)(layout.menuWidth * 0.30f);
-//	layout.heroHeight = (int)(layout.menuHeight * 0.45f);
-//	layout.heroX = layout.centerX + (layout.menuWidth - layout.heroWidth) / 2;
-//	layout.heroY = layout.centerY + 10;
-//
-//	// Размеры для предметов
-//	layout.squareSize = (int)(layout.menuWidth * 0.1f);
-//	layout.spacing = (int)(layout.menuHeight * 0.02f);
-//	layout.itemsStartY = layout.heroY + layout.heroHeight + (int)(layout.menuHeight * 0.05f);
-//
-//	return layout;
-//}
-//
-//// 2. Отрисовка фона меню
-//void DrawMenuBackground(HDC hMemDC, const MenuLayout& layout) {
-//	DrawBitmap(hMemDC, layout.centerX, layout.centerY,
-//		layout.menuWidth, layout.menuHeight, menu, false);
-//}
-//
-//// 3. Отрисовка героя
-//void DrawMenuHero(HDC hMemDC, const MenuLayout& layout) {
-//	DrawBitmap(hMemDC, layout.heroX, layout.heroY,
-//		layout.heroWidth, layout.heroHeight, hero.picture, false);
-//}
-//
-//// 4. Отрисовка предметов
-//void DrawMenuItems(HDC hMemDC, const MenuLayout& layout) {
-//	if (hero.item.empty()) return;
-//
-//	for (int i = 0; i < hero.item.size(); i++) {
-//		hero.item[i].model.x = layout.centerX + i * (layout.menuWidth - layout.squareSize) / 7;
-//		hero.item[i].model.y = layout.itemsStartY + (layout.squareSize + layout.spacing);
-//		hero.item[i].model.width = layout.squareSize;
-//		hero.item[i].model.height = layout.squareSize;
-//
-//		DrawBitmap(hMemDC, hero.item[i].model.x, hero.item[i].model.y,
-//			hero.item[i].model.width, hero.item[i].model.height,
-//			hero.item[i].picture, false);
-//	}
-//}
-//
-//// 5. Отрисовка слота для рук
-//void DrawHandSlot(HDC hMemDC, const MenuLayout& layout) {
-//	Hand.model.x = layout.heroX + layout.squareSize * 4;
-//	Hand.model.y = layout.centerY + layout.squareSize;
-//	Hand.model.width = layout.squareSize;
-//	Hand.model.height = layout.squareSize;
-//
-//	HBITMAP handBitmap = hero.rig.empty() ? Hand.picture : hero.rig[0].picture;
-//	DrawBitmap(hMemDC, Hand.model.x, Hand.model.y,
-//		Hand.model.width, Hand.model.height, handBitmap, false);
-//}
-//
-//// Главная функция - теперь очень компактная
-//void Back_menu(HDC hMemDC) {
-//	MenuLayout layout = CalculateMenuLayout();
-//
-//	DrawMenuBackground(hMemDC, layout);
-//	DrawMenuHero(hMemDC, layout);
-//	DrawMenuItems(hMemDC, layout);
-//	DrawHandSlot(hMemDC, layout);
-//}
 
 
-void Back_menu(HDC hMemDC) {
+menuSettings MenuCalculate() {
 
-	float imageWidthPercent = 0.20f; // для меню
-	float imageHeightPercent = 0.35f;// для меню
+	menuSettings layot;
 
-	float iw = 0.30f; // для картинки героя
-	float ih = 0.45f;// для картинки героя
+	// размеры меню, делаем в процентах от экрана, чтобы внезависимо от экрана меню ровно вставало
+	layot.menuWidth = (int)(window.width * 0.20f);
+	layot.menuHeight = (int)(window.height * 0.35f);
+	layot.spacing = (int)(layot.menuHeight * 0.02f); // отступ в 2% ширины экрана
 
-	int menuWidth = (int)(window.width * imageWidthPercent); // ширина меню
-	int menuHeight = (int)(window.height * imageHeightPercent); // высота меню
+	// позиция меню относительно экрана
+	layot.centerX = (window.width - layot.menuWidth) / 2;
+	layot.centerY = (window.height - layot.menuHeight) / 2;
 
-	int centerX = (window.width - menuWidth) / 2; // х меню
-	int centerY = (window.height - menuHeight) / 2; // у меню
+	// расчитываем размеры игрока относительно меню как делали с меню, только вместо ширины/высоты экрана, у нас меню
+	layot.avatarWidth = (int)(layot.menuWidth * 0.3f); // 30% от ширины меню
+	layot.avatarHeight = (int)(layot.menuHeight * 0.45f);// 45% от высоты меню
+
+	// ставим аватар героя в меню 
+	layot.avatarX = layot.centerX + (layot.menuWidth - layot.avatarWidth) / 2;
+	layot.avatarY = layot.centerY + layot.spacing; // небольшой оступ от y меню
+
+	// расчитаем размер квадрата предмета который будет помещен в инвентарь
+	layot.squaereSize = (int)(layot.menuWidth * 0.1f); //10% от ширины экрана
+	layot.itemStartY = layot.avatarY + layot.avatarHeight + (int)(layot.menuHeight * 0.05f); // стартовая позиция отрисовки предметов 
+
+	return layot;
+
+}
+
+void DrawMenuBackground(HDC hMemDC, const menuSettings& layot) {
+
+	DrawBitmap(hMemDC, layot.centerX, layot.centerY, layot.menuWidth, layot.menuHeight, menu, false);
+
+}
+
+void DrawAvatarinMenu(HDC hMemDC, const menuSettings& layot) {
+
+	DrawBitmap(hMemDC, layot.avatarX, layot.avatarY, layot.avatarWidth, layot.avatarHeight, hero.picture, false);
 
 
-	int hw = (int)(menuWidth * iw); // высота картинки героя
-	int hh = (int)(menuHeight * ih); // высота картинки героя
+}
 
-	// Позиция игрока: по центру в верхней части меню
-	int cx = centerX + (menuWidth - hw) / 2;
-	int cy = centerY + 10;  // Небольшой отступ от верха меню
+void DrawMenuItems(HDC hMemDC, const menuSettings& layout) {
 
-	DrawBitmap(hMemDC, centerX, centerY, menuWidth, menuHeight, menu, false); // задник
-	DrawBitmap(hMemDC, cx, cy, hw, hh, hero.picture, false); // картинка игрока
-
-
-	int squareSize = (int)(menuWidth * 0.1f); // 15% ширины меню
-	int spacing = (int)(menuHeight * 0.02f); // 2% высоты меню
-
-
-
-	// Начальная позиция для квадратиков
-	int startY = cy + hh + (int)(menuHeight * 0.05f);
+	if (hero.item.empty()) return;
 
 	for (int i = 0; i < hero.item.size(); i++) {
 
-		if (!hero.item.empty()) {
+		hero.item[i].model.x = layout.centerX + i * (layout.menuWidth - layout.squaereSize) / 7;
+		hero.item[i].model.y = layout.itemStartY + (layout.squaereSize + layout.spacing);
+		hero.item[i].model.width = layout.squaereSize;
+		hero.item[i].model.height = layout.squaereSize;
 
-			hero.item[i].model.x = centerX + i * (menuWidth - squareSize) / 7;
-			hero.item[i].model.y = startY + (squareSize + spacing);
-			hero.item[i].model.width = squareSize;
-			hero.item[i].model.height = squareSize;
+		DrawBitmap(hMemDC, hero.item[i].model.x, hero.item[i].model.y, hero.item[i].model.width, hero.item[i].model.height, hero.item[i].picture, false); // предметы в слотах
 
-			DrawBitmap(hMemDC, hero.item[i].model.x, hero.item[i].model.y, hero.item[i].model.width, hero.item[i].model.height, hero.item[i].picture, false); // предметы в слотах
-
-		}
 	}
 
-	Hand.model.x = cx + squareSize * 4;
-	Hand.model.y = centerY + squareSize;
-	Hand.model.width = squareSize;
-	Hand.model.height = squareSize;
+}
 
+void DrawMenuHand(HDC hMemDC, const menuSettings& layout) {
+
+	Hand.model.x = layout.avatarX + layout.squaereSize * 4;
+	Hand.model.y = layout.avatarY + layout.squaereSize;
+	Hand.model.width = layout.squaereSize;
+	Hand.model.height = layout.squaereSize;
 
 	DrawBitmap(hMemDC, Hand.model.x, Hand.model.y, Hand.model.width, Hand.model.height, hero.rig.empty() ? Hand.picture : hero.rig[0].picture, false); // слот рук
 
 
 }
 
+
 void Menu(HDC hMemDC) {
 
 	if (!GameActiv) {
 
-		Back_menu(hMemDC);
+		//Back_menu(hMemDC);
+
+		menuSettings layout = MenuCalculate();
+
+		DrawMenuBackground(hMemDC, layout);
+		DrawAvatarinMenu(hMemDC, layout);
+		DrawMenuItems(hMemDC, layout);
+		DrawMenuHand(hMemDC, layout);
+
 
 
 	}

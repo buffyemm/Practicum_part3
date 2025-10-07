@@ -268,16 +268,31 @@ void Collise_ball() {
 			if (Collise(enemy.model, ball.model)) {
 
 
-				enemy.model.x += 50;
+				if (enemy.HP > 0) {
 
-				for (int i = 0; i < enemy.item.size(); i++) {
+					enemy.HP -= hero.rig[0].model.speed;
+					enemy.model.y -= 500;
 
-					room[hero.current_loc].item.emplace_back(enemy.item[i]);
-					enemy.item.erase(enemy.item.cbegin() + i);
-					enemy.item.clear();
+				}
+				else {
+
+					
+
+					for (int i = 0; i < enemy.item.size(); i++) {
+
+						room[hero.current_loc].item.emplace_back(enemy.item[i]);
+						enemy.item.erase(enemy.item.cbegin() + i);
+						enemy.item.clear();
+					}
+
+					enemy.picture = NULL;
+
+					enemy.set_parameters(rand() % window.width, window.height / 2, 100, 150, 10, 100);
+
 				}
 
-				enemy.picture = NULL;
+
+
 
 
 
@@ -297,16 +312,28 @@ void Enemy_Fight() {
 		if (!hero.rig.empty() && (hero.rig[0].ID == item_::Axe || hero.rig[0].ID == item_::Sword)) {
 
 
-			enemy.model.x += 50;
-	
-			for (int i = 0; i < enemy.item.size(); i++) {
+			if (enemy.HP > 0) {
 
-				room[hero.current_loc].item.emplace_back(enemy.item[i]);
-				enemy.item.erase(enemy.item.cbegin() + i);
-				enemy.item.clear();
+				enemy.HP -= hero.rig[0].model.speed;
+				enemy.model.y -= 500;
+
 			}
+			else {
 
-			enemy.picture = NULL;
+				for (int i = 0; i < enemy.item.size(); i++) {
+
+					room[hero.current_loc].item.emplace_back(enemy.item[i]);
+					enemy.item.erase(enemy.item.cbegin() + i);
+					enemy.item.clear();
+				}
+
+				enemy.picture = NULL;
+				
+				enemy.set_parameters(rand() % window.width, window.height / 2, 100, 150, 10, 100);
+
+			}
+	
+
 
 		}
 

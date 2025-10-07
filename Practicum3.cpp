@@ -355,9 +355,7 @@ void ProcesImput() {
 
 	float gravity = 30;
 	if (GetAsyncKeyState('A')) hero.model.x -= hero.model.speed;
-	if (GetAsyncKeyState('D')) {
-		hero.model.x += hero.model.speed;
-	}
+	if (GetAsyncKeyState('D')) hero.model.x += hero.model.speed;
 
 	if (GetAsyncKeyState(VK_SPACE) && !hero.model.inJump) {
 
@@ -407,7 +405,6 @@ void Rbutton() {
 			}
 
 		}
-	
 
 	}
 

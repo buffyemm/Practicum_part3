@@ -221,16 +221,16 @@ void InitGame() {
 
 
 	// закидывамем предметы в локациию, логика такая же, как в текстовой адвенчуре
-	room[0].item.push_back({{window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
+	room[0].item.push_back({{window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 20},
 	(HBITMAP)LoadImageW(NULL, L"sword.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::Sword });
 
-	room[1].item.push_back({ {window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
+	room[1].item.push_back({ {window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 30},
 	(HBITMAP)LoadImageW(NULL, L"axe.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::Axe });
 
 	room[0].item.push_back({ {hero.model.width, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
 	(HBITMAP)LoadImageW(NULL, L"key.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::block });
 
-	room[1].item.push_back({ {window.width - (window.width * scale), window.height - hero.model.height, window.width * scale * (0.5f), window.height * scale * (0.5f), 0},
+	room[1].item.push_back({ {window.width - (window.width * scale), window.height - hero.model.height, window.width * scale * (0.5f), window.height * scale * (0.5f), 10},
 	(HBITMAP)LoadImageW(NULL, L"bow.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::Bow });
 
 
@@ -340,6 +340,41 @@ void Enemy_Fight() {
 	}
 
 }
+
+
+void EnemyMove() {
+
+	float dist = 500;
+
+
+	float distToHero = abs(enemy.model.x - hero.model.x);
+
+
+	if (distToHero < dist && enemy.model.y - hero.model.y < 200) {
+
+		if (enemy.model.x < hero.model.x) { // right enemy
+
+			enemy.HP > 20 ? enemy.model.x += 10 : enemy.model.x -= 10;
+
+
+
+		}
+		else {
+
+			enemy.HP > 20 ? enemy.model.x -= 10 : enemy.model.x += 10;
+
+		}
+
+		Enemy_Fight();
+
+
+	}
+
+	enemy.model.y += 30;
+	enemy.model.y = min((enemy.model.y), (window.height - enemy.model.height));
+
+}
+
 
 // отрисовка
 auto DrawBitmap = [](HDC hdcDest, int x, int y, int w, int h, HBITMAP hBmp, bool transparent) {
@@ -694,8 +729,8 @@ void Process_game() {
 		ProcesImput();
 		Proces_room();
 		Portal_Logic();
+		EnemyMove();
 		ProcesBall();
-		Enemy_Fight();
 		Collise_ball();
 
 	}

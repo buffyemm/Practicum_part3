@@ -9,9 +9,10 @@
 
 using namespace std;
 
-bool GameActiv = true;
+bool GameActiv = true; // если игра активна
 BOOL time_at = false; // время прошло клика стрелы
 
+// по хорошему, куда то закинуть эту переменную, но я оставил ее так, для заднкиа меню
 HBITMAP menu = (HBITMAP)LoadImageW(NULL, L"menu.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 // создадим для удобства структуру window чтобы не носиться со всеми переменными
 struct {
@@ -45,14 +46,15 @@ public:
 };
 
 
-class ar : public object_ {
+class Arrow_ : public object_ {
 
 public:
 
 	float directionX, directionY;
 	bool activ;
 
-	ar(float x, float y) {
+	// упрощенная инициализация, где то написан метод, где то конструктор
+	Arrow_(float x, float y) {
 
 		model.x = x;
 		model.y = y;
@@ -63,6 +65,7 @@ public:
 		activ = false;
 	}
 
+	// вышел ли за экран, проверка для шара
 	bool isOutOfScreen() {
 
 		return (model.x + model.width > window.width ||
@@ -80,6 +83,7 @@ class portal_ : public object_ {
 public:
 	int target;
 
+	//упрощонная инициализация через конструктор
 	portal_(float x, float y, float width, float height, LPCWSTR name, int temp) { //конструктор класса
 
 		model.x = x;
@@ -103,6 +107,7 @@ struct Character {
 	HBITMAP anim[4];
 	int HP;
 
+	//метод для упрощения инициализации игрока
 	void set_parameters(float x, float y, float width, float height, float speed, int hp) {
 
 		model.x = x;
@@ -114,11 +119,18 @@ struct Character {
 
 	}
 
+	//вспомогательная функция, которая отслеживает ID предметов в снаряжении и изходя из этого передает число, которое будет вставляться в массив картинок, для отображения игрока
 	int get_anim_index() {
 
 		if (rig.empty()) return 0;
 
 		else return (int)rig[0].ID + 1;
+
+	}
+
+	void set_picture(int i, LPCWSTR name) {
+
+		anim[i] = ((HBITMAP)LoadImageW(NULL, L"name", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
 
 	}
 
@@ -135,29 +147,15 @@ struct location_ {
 
 Character hero;
 Character enemy;
-std::vector<ar>arrow;
+std::vector<Arrow_>arrow;
 
 location_ room[2];
 
-bool Check_collise(sprite first, sprite second) {  // проверка коллизии 
-
-	if (first.x <= second.x + second.width && +
-		first.x + first.width >= second.x &&
-		first.y <= second.y + second.height &&
-		first.y + first.height >= second.y) {
-
-		return true;
-	}
-
-	return false;
-
-
-}
 
 struct {
 
 	POINT p;
-
+	//коллизия мышки
 	bool collise_mouse(sprite first) {
 
 		if (p.x >= first.x &&
@@ -214,6 +212,8 @@ void InitGame() {
 
 	Hand.picture = (HBITMAP)LoadImageW(NULL, L"hand.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
+	hero.set_picture(0, L"A0.bmp");
+
 	hero.anim[0] = ((HBITMAP)LoadImageW(NULL, L"A0.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
 	hero.anim[1] = ((HBITMAP)LoadImageW(NULL, L"S.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
 	hero.anim[2] = ((HBITMAP)LoadImageW(NULL, L"B.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
@@ -226,9 +226,6 @@ void InitGame() {
 
 	room[1].item.push_back({ {window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 30},
 	(HBITMAP)LoadImageW(NULL, L"axe.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::Axe });
-
-	room[0].item.push_back({ {hero.model.width, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 0},
-	(HBITMAP)LoadImageW(NULL, L"key.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::block });
 
 	room[1].item.push_back({ {window.width - (window.width * scale), window.height - hero.model.height, window.width * scale * (0.5f), window.height * scale * (0.5f), 10},
 	(HBITMAP)LoadImageW(NULL, L"bow.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::Bow });
@@ -243,7 +240,8 @@ void InitGame() {
 
 }
 
-bool Collise(sprite first, sprite second) {
+//вспомогательная функиця которая проверяет находиться ли first внутри second, проверка коллизии  
+bool СheckCollise(sprite first, sprite second) {
 
 
 	if (first.x <= second.x + second.width && +
@@ -258,6 +256,7 @@ bool Collise(sprite first, sprite second) {
 
 }
 
+//коллизия шара
 void Collise_ball() {
 
 
@@ -265,7 +264,7 @@ void Collise_ball() {
 
 		for (auto ball : arrow) {
 
-			if (Collise(enemy.model, ball.model)) {
+			if (СheckCollise(enemy.model, ball.model)) {
 
 
 				if (enemy.HP > 0) {
@@ -275,8 +274,6 @@ void Collise_ball() {
 
 				}
 				else {
-
-					
 
 					for (int i = 0; i < enemy.item.size(); i++) {
 
@@ -291,11 +288,6 @@ void Collise_ball() {
 
 				}
 
-
-
-
-
-
 			}
 
 		}
@@ -304,9 +296,10 @@ void Collise_ball() {
 
 }
 
+//боевка с противником
 void Enemy_Fight() {
 
-	if (Collise(enemy.model, hero.model)) {
+	if (СheckCollise(enemy.model, hero.model)) {
 
 
 		if (!hero.rig.empty() && (hero.rig[0].ID == item_::Axe || hero.rig[0].ID == item_::Sword)) {
@@ -332,8 +325,6 @@ void Enemy_Fight() {
 				enemy.set_parameters(rand() % window.width, window.height / 2, 100, 150, 10, 100);
 
 			}
-	
-
 
 		}
 
@@ -341,11 +332,10 @@ void Enemy_Fight() {
 
 }
 
-
+// логика движения противника
 void EnemyMove() {
 
 	float dist = 500;
-
 
 	float distToHero = abs(enemy.model.x - hero.model.x);
 
@@ -355,7 +345,6 @@ void EnemyMove() {
 		if (enemy.model.x < hero.model.x) { // right enemy
 
 			enemy.HP > 20 ? enemy.model.x += 10 : enemy.model.x -= 10;
-
 
 
 		}
@@ -399,8 +388,8 @@ auto DrawBitmap = [](HDC hdcDest, int x, int y, int w, int h, HBITMAP hBmp, bool
 
 
 
-
-menuSettings MenuCalculate() {
+// подсчет размера меню
+menuSettings MenuCalculate() { 
 
 	menuSettings layot;
 
@@ -427,14 +416,16 @@ menuSettings MenuCalculate() {
 
 	return layot;
 
-}
+} 
 
+// отрисовка заднего фона
 void DrawMenuBackground(HDC hMemDC, const menuSettings& layot) {
 
 	DrawBitmap(hMemDC, layot.centerX, layot.centerY, layot.menuWidth, layot.menuHeight, menu, false);
 
 }
 
+//отрисовка аватара в меню
 void DrawAvatarinMenu(HDC hMemDC, const menuSettings& layot) {
 
 
@@ -442,6 +433,7 @@ void DrawAvatarinMenu(HDC hMemDC, const menuSettings& layot) {
 
 }
 
+// отрисовка предметов в меню
 void DrawMenuItems(HDC hMemDC, const menuSettings& layout) {
 
 	if (hero.item.empty()) return;
@@ -459,6 +451,7 @@ void DrawMenuItems(HDC hMemDC, const menuSettings& layout) {
 
 }
 
+//отрисовка снаряжения в меню
 void DrawMenuHand(HDC hMemDC, const menuSettings& layout) {
 
 	Hand.model.x = layout.avatarX + layout.squaereSize * 4;
@@ -471,7 +464,7 @@ void DrawMenuHand(HDC hMemDC, const menuSettings& layout) {
 
 }
 
-
+//главная функция отрисовки меню
 void Menu(HDC hMemDC) {
 
 	if (!GameActiv) {
@@ -513,6 +506,7 @@ void ShowObject(HDC hMemDC) {
 	// герой
 	DrawBitmap(hMemDC, hero.model.x, hero.model.y, hero.model.width, hero.model.height, hero.anim[hero.get_anim_index()], true);
 
+	//отрисовка стрел
 	for (auto a : arrow) {
 
 		if (a.activ)
@@ -520,7 +514,7 @@ void ShowObject(HDC hMemDC) {
 			DrawBitmap(hMemDC, a.model.x, a.model.y, a.model.width, a.model.height, a.picture, true);
 
 	}
-
+	//отрисовка противника
 	DrawBitmap(hMemDC, enemy.model.x, enemy.model.y, enemy.model.width, enemy.model.height, enemy.picture, true);
 
 	Menu(hMemDC);
@@ -534,7 +528,7 @@ void Portal_Logic() {
 
 	for (auto p : room[hero.current_loc].portal) {
 
-		if (Check_collise(hero.model, p.model)) {
+		if (СheckCollise(hero.model, p.model)) { // если произошла коллизия с порталом, то пепермещаем игрока
 
 			hero.current_loc = p.target;
 			hero.model.x = hero.model.width;
@@ -572,6 +566,7 @@ void ProcesImput() {
 		hero.model.inJump = false;
 }
 
+//логика полета шара
 void ProcesBall() {
 
 	for (int i = 0; i < arrow.size(); i++) {
@@ -583,7 +578,7 @@ void ProcesBall() {
 	}
 }
 
-
+//логика подбора
 void Pick() {
 
 	for (int i = 0; i < room[hero.current_loc].item.size(); i++) {
@@ -617,6 +612,7 @@ void Pick() {
 
 }
 
+//логика правой кнопки мыши
 void Rbutton() {
 
 
@@ -663,10 +659,11 @@ void Proces_room() {
 
 }
 
+//расчет направления шара
 void Mouse_Action() {
 
 
-	arrow.push_back(ar(hero.model.x + hero.model.width, hero.model.y + hero.model.height / 2));
+	arrow.push_back(Arrow_(hero.model.x + hero.model.width, hero.model.y + hero.model.height / 2));
 
 	// Вычисляем вектор направления
 	int targetX = mouse.p.x;
@@ -700,6 +697,7 @@ void Mouse_Action() {
 
 }
 
+//очистка шаров
 void Clean_arrows() {
 
 	for (int i = arrow.size() - 1; i >= 0; i--) {
@@ -718,8 +716,6 @@ void Clean_arrows() {
 
 }
 
-
-
 void Process_game() {
 
 	GetCursorPos(&mouse.p);
@@ -735,6 +731,64 @@ void Process_game() {
 
 	}
 }
+
+ // кесы для WindoProc, чтобы код был более читаемый
+void Case_KEYdown(WPARAM wParam, HWND hwnd) {
+
+	if (wParam == VK_ESCAPE) {
+
+		DestroyWindow(hwnd);
+
+	}
+
+	if (wParam == 'I') {
+
+		GameActiv ? GameActiv = false : GameActiv = true;
+
+	}
+
+	if (wParam == 'E')
+		Pick();
+
+}
+
+void Case_Destroy(HWND hwnd) {
+
+	PostQuitMessage(0);
+	KillTimer(hwnd, 1);
+	KillTimer(hwnd, 2);
+
+}
+
+void Case_Create(HWND hwnd) {
+
+	room[0].hBack = (HBITMAP)LoadImageW(NULL, L"les.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE); // загружаем картинку в переменную HBITMAP 
+	room[1].hBack = (HBITMAP)LoadImageW(NULL, L"test.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE); // загружаем картинку в переменную HBITMAP 
+
+
+	if (!room[0].hBack || !room[0].hBack) MessageBoxW(hwnd, L"Не удалось!", L"ОШИБКА", MB_ICONERROR);
+
+}
+
+void Case_Timer(WPARAM wParam, HWND hwnd) {
+
+	if (wParam == 1) { // у каждого таймера есть свой айди, и если таймер под айдишником 1 закончился, то мы запускаем то что ниже
+
+		InvalidateRect(hwnd, NULL, FALSE); // перерисовка всего окна
+		Process_game();
+
+	}
+
+	if (wParam == 2 && time_at) {
+
+		KillTimer(hwnd, 2);
+		Mouse_Action();
+		Clean_arrows();
+		time_at = false;
+	}
+
+}
+
 
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -795,26 +849,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
 
 	case WM_KEYDOWN:
-		if (wParam == VK_ESCAPE) {
 
-			DestroyWindow(hwnd);
-
-		}
-
-		if (wParam == 'I') {
-
-			GameActiv ? GameActiv = false : GameActiv = true;
-
-		}
-
-		
-			if (wParam == 'E')
-				Pick();
-
-
-		
+		Case_KEYdown(wParam, hwnd);
 		break;
-
 
 	case WM_LBUTTONDOWN:
 
@@ -822,51 +859,29 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 			SetTimer(hwnd, 2, 600, NULL);
 			time_at = true;
 		}
-
-			break;
+		break;
 
 	case WM_RBUTTONDOWN:
 
 		Rbutton();
-
-
-
 		break;
 
 	case WM_DESTROY: // когда уничтожается
-		PostQuitMessage(0);
-		KillTimer(hwnd, 1);
-		KillTimer(hwnd, 2);
+		Case_Destroy(hwnd);
 		return 0;
 
 
 	case WM_CREATE: { // кейс когда создается окно 
 
-
-		room[0].hBack = (HBITMAP)LoadImageW(NULL, L"les.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE); // загружаем картинку в переменную HBITMAP 
-		room[1].hBack = (HBITMAP)LoadImageW(NULL, L"test.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE); // загружаем картинку в переменную HBITMAP 
-
-
-		if (!room[0].hBack || !room[0].hBack) MessageBoxW(hwnd, L"Не удалось!", L"ОШИБКА", MB_ICONERROR);
-
+		Case_Create(hwnd);
 		break;
+
 	}
 
 	case WM_TIMER:
-		if (wParam == 1) { // у каждого таймера есть свой айди, и если таймер под айдишником 1 закончился, то мы запускаем то что ниже
 
-			InvalidateRect(hwnd, NULL, FALSE); // перерисовка всего окна
-			Process_game();
-
-		}
-
-		if (wParam == 2 && time_at) {
-
-			KillTimer(hwnd, 2);
-			Mouse_Action();
-			Clean_arrows();
-			time_at = false;
-		}
+		Case_Timer(wParam, hwnd);
+		
 		break;
 
 	case WM_PAINT: { // вывод на экран картинки 

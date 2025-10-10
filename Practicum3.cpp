@@ -9,6 +9,8 @@
 
 using namespace std;
 
+#define SCALE  0.104f
+
 bool GameActiv = true; // если игра активна
 BOOL time_at = false; // время прошло клика стрелы
 
@@ -43,6 +45,17 @@ public:
 	sprite model;
 	HBITMAP picture;
 	item_ ID;
+
+	void set_setting(int width, int height, int x, int y, LPCWSTR name) {
+
+		model.width = width;
+		model.height = height;
+		model.x = x;
+		model.y;
+		picture = ((HBITMAP)LoadImageW(NULL, name, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
+
+	}
+
 };
 
 
@@ -56,12 +69,7 @@ public:
 	// упрощенная инициализация, где то написан метод, где то конструктор
 	Arrow_(float x, float y) {
 
-		model.x = x;
-		model.y = y;
-		model.speed = 10;
-		model.width = 40;
-		model.height = 40;
-		picture = (HBITMAP)LoadImageW(NULL, L"ball.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		set_setting(40, 40, x, y, L"ball.bmp");
 		activ = false;
 	}
 
@@ -86,6 +94,7 @@ public:
 	//упрощонная инициализация через конструктор
 	portal_(float x, float y, float width, float height, LPCWSTR name, int temp) { //конструктор класса
 
+		//set_setting(width, height, x, y, name);
 		model.x = x;
 		model.y = y;
 		model.width = width;
@@ -130,7 +139,7 @@ struct Character {
 
 	void set_picture(int i, LPCWSTR name) {
 
-		anim[i] = ((HBITMAP)LoadImageW(NULL, L"name", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
+		anim[i] = ((HBITMAP)LoadImageW(NULL, name, IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
 
 	}
 
@@ -196,46 +205,52 @@ void InitWindow() { // инициализация структуры window
 
 }
 
-void InitGame() {
+//расставляем по локации предметы, противника
+void SetINlocation() {
 
-	static float scale = 0.104; // для экрана 
-	// инициализирую переменные в hero, дальше будем делать метод.
-
-	hero.set_parameters(window.width * scale, window.height - (window.height * scale), window.width * scale * (0.377), window.height * scale, 20, 100); // метод
-
-	enemy.set_parameters(window.width / 2, hero.model.y, hero.model.width, hero.model.height, 10, 150);
-
-	enemy.picture = (HBITMAP)LoadImageW(NULL, L"E0.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-
-	enemy.item.push_back({{ enemy.model.x, enemy.model.y, window.width * scale * (0.377f), window.width * scale * (0.377f), 0 },
-		(HBITMAP)LoadImageW(NULL, L"key.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::block});
-
-	Hand.picture = (HBITMAP)LoadImageW(NULL, L"hand.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-
-	hero.set_picture(0, L"A0.bmp");
-
-	hero.anim[0] = ((HBITMAP)LoadImageW(NULL, L"A0.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
-	hero.anim[1] = ((HBITMAP)LoadImageW(NULL, L"S.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
-	hero.anim[2] = ((HBITMAP)LoadImageW(NULL, L"B.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
-	hero.anim[3] = ((HBITMAP)LoadImageW(NULL, L"A.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE));
-
-
-	// закидывамем предметы в локациию, логика такая же, как в текстовой адвенчуре
-	room[0].item.push_back({{window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 20},
+	room[0].item.push_back({ {window.width * SCALE, window.height - hero.model.height, window.width * SCALE * (0.377f), window.height * SCALE * (0.377f), 20},
 	(HBITMAP)LoadImageW(NULL, L"sword.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::Sword });
 
-	room[1].item.push_back({ {window.width * scale, window.height - hero.model.height, window.width * scale * (0.377f), window.height * scale * (0.377f), 30},
+	room[1].item.push_back({ {window.width * SCALE, window.height - hero.model.height, window.width * SCALE * (0.377f), window.height * SCALE * (0.377f), 30},
 	(HBITMAP)LoadImageW(NULL, L"axe.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::Axe });
 
-	room[1].item.push_back({ {window.width - (window.width * scale), window.height - hero.model.height, window.width * scale * (0.5f), window.height * scale * (0.5f), 10},
+	room[1].item.push_back({ {window.width - (window.width * SCALE), window.height - hero.model.height, window.width * SCALE * (0.5f), window.height * SCALE * (0.5f), 10},
 	(HBITMAP)LoadImageW(NULL, L"bow.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::Bow });
-
-
 
 	// закидываем порталы
 	room[0].portal.emplace_back(window.width - hero.model.width, window.height - hero.model.height * 2, hero.model.width, hero.model.height, L"portal.bmp", 1);
-	
+
 	room[1].portal.emplace_back(window.width * (0.5f), window.height - hero.model.height * 3, hero.model.width, hero.model.height, L"portal.bmp", 0);
+
+	enemy.item.push_back({ { enemy.model.x, enemy.model.y, window.width * SCALE * (0.377f), window.width * SCALE * (0.377f), 0 },
+		(HBITMAP)LoadImageW(NULL, L"key.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE), item_::block });
+
+}
+
+//ставим картинки
+void Set_HBITMAP() {
+
+	enemy.picture = (HBITMAP)LoadImageW(NULL, L"E0.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	Hand.picture = (HBITMAP)LoadImageW(NULL, L"hand.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	hero.set_picture(0, L"A0.bmp");
+	hero.set_picture(1, L"S.bmp");
+	hero.set_picture(2, L"B.bmp");
+	hero.set_picture(3, L"A.bmp");
+
+}
+
+
+void InitGame() {
+
+	// инициализирую переменные в hero, дальше будем делать метод.
+
+	hero.set_parameters(window.width * SCALE, window.height - (window.height * SCALE), window.width * SCALE * (0.377), window.height * SCALE, 20, 100); // метод
+
+	enemy.set_parameters(window.width / 2, hero.model.y, hero.model.width, hero.model.height, 10, 150);
+
+	Set_HBITMAP(); 
+
+	SetINlocation();
 
 
 }
@@ -366,7 +381,7 @@ void EnemyMove() {
 
 
 // отрисовка
-auto DrawBitmap = [](HDC hdcDest, int x, int y, int w, int h, HBITMAP hBmp, bool transparent) {
+void DrawBitmap (HDC hdcDest, int x, int y, int w, int h, HBITMAP hBmp, bool transparent) {
 	if (!hBmp) return;
 	HDC hMemDC = CreateCompatibleDC(hdcDest);
 	HBITMAP hOldBmp = (HBITMAP)SelectObject(hMemDC, hBmp);
@@ -789,7 +804,28 @@ void Case_Timer(WPARAM wParam, HWND hwnd) {
 
 }
 
+void Case_Paint(HDC hdc) {
 
+	// 1. Создаём буфер в памяти
+	HDC hMemDC = CreateCompatibleDC(hdc);
+	HBITMAP hMemBmp = CreateCompatibleBitmap(hdc, window.width, window.height);
+	HBITMAP hOldBmp = (HBITMAP)SelectObject(hMemDC, hMemBmp);
+
+
+	// --- Платформа и герой ---
+
+	ShowObject(hMemDC);
+
+
+	// 3. Копируем готовый буфер на экран
+	BitBlt(hdc, 0, 0, window.width, window.height, hMemDC, 0, 0, SRCCOPY);
+
+	// 4. Очистка
+	SelectObject(hMemDC, hOldBmp);
+	DeleteObject(hMemBmp);
+	DeleteDC(hMemDC);
+
+}
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -829,7 +865,6 @@ int WINAPI wWinMain(HINSTANCE hI, HINSTANCE hPrevInstance, PWSTR pCmdLine, int n
 	ShowWindow(window.hWnd, nCmdShow);
 
 	SetTimer(window.hWnd, 1, 16, NULL);// ставим таймер на 16 милесикунд~60фпс
-
 
 
 	MSG msg = { };
@@ -877,7 +912,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 		break;
 
 	}
-
 	case WM_TIMER:
 
 		Case_Timer(wParam, hwnd);
@@ -888,25 +922,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
 
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hwnd, &ps);
-
-		// 1. Создаём буфер в памяти
-		HDC hMemDC = CreateCompatibleDC(hdc);
-		HBITMAP hMemBmp = CreateCompatibleBitmap(hdc, window.width, window.height);
-		HBITMAP hOldBmp = (HBITMAP)SelectObject(hMemDC, hMemBmp);
-
-
-		// --- Платформа и герой ---
-
-		ShowObject(hMemDC);
-
-
-		// 3. Копируем готовый буфер на экран
-		BitBlt(hdc, 0, 0, window.width, window.height, hMemDC, 0, 0, SRCCOPY);
-
-		// 4. Очистка
-		SelectObject(hMemDC, hOldBmp);
-		DeleteObject(hMemBmp);
-		DeleteDC(hMemDC);
+		Case_Paint(hdc);
 		EndPaint(hwnd, &ps);
 	}
 

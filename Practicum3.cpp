@@ -46,7 +46,7 @@ public:
 	HBITMAP picture;
 	item_ ID;
 
-	void set_setting(int width, int height, int x, int y, LPCWSTR name) {
+	void set_setting(int width, int height, int x, int y, LPWSTR name) {
 
 		model.width = width;
 		model.height = height;
@@ -69,7 +69,12 @@ public:
 	// упрощенная инициализация, где то написан метод, где то конструктор
 	Arrow_(float x, float y) {
 
-		set_setting(40, 40, x, y, L"ball.bmp");
+		model.x = x;
+		model.y = y;
+		model.speed = 10;
+		model.width = 40;
+		model.height = 40;
+		picture = (HBITMAP)LoadImageW(NULL, L"ball.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 		activ = false;
 	}
 
@@ -94,7 +99,6 @@ public:
 	//упрощонная инициализация через конструктор
 	portal_(float x, float y, float width, float height, LPCWSTR name, int temp) { //конструктор класса
 
-		//set_setting(width, height, x, y, name);
 		model.x = x;
 		model.y = y;
 		model.width = width;

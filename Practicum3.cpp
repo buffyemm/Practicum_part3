@@ -777,7 +777,7 @@ void Case_Destroy(HWND hwnd) {
 
 void Case_Create(HWND hwnd) {
 
-	room[0].hBack = (HBITMAP)LoadImageW(NULL, L"les.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE); // загружаем картинку в переменную HBITMAP 
+	room[0].hBack = (HBITMAP)LoadImageW(NULL, L"fon2.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE); // загружаем картинку в переменную HBITMAP 
 	room[1].hBack = (HBITMAP)LoadImageW(NULL, L"test.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE); // загружаем картинку в переменную HBITMAP 
 
 
